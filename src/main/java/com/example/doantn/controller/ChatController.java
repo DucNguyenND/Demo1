@@ -6,17 +6,21 @@ import com.example.doantn.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@Slf4j
+@Controller
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
 @Tag(name = "Chat", description = "Chat API endpoints")
@@ -25,34 +29,23 @@ public class ChatController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/chat.sendMessage")
-    @Operation(summary = "Gửi tin nhắn", description = "Gửi tin nhắn đến người dùng khác")
-    public void sendMessage(@Payload ChatMessage chatMessage) {
-        ChatMessage savedMessage = chatService.saveMessage(chatMessage);
-        
-        // Gửi tin nhắn đến người nhận
-        messagingTemplate.convertAndSendToUser(
-                chatMessage.getReceiverUsername(),
-                "/queue/messages",
-                savedMessage
-        );
-        
-        // Gửi tin nhắn đến người gửi (để cập nhật UI)
-        messagingTemplate.convertAndSendToUser(
-                chatMessage.getSenderUsername(),
-                "/queue/messages",
-                savedMessage
-        );
+    @MessageMapping("/chat.send")
+    @SendTo("/topic/messages")
+    public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
+        log.info("Received message: {}", chatMessage);
+        // Lưu vào database
+        ChatMessage saved = chatService.saveMessage(chatMessage);
+        return saved;
     }
 
     @MessageMapping("/chat.addUser")
-    @Operation(summary = "Thêm người dùng vào chat", description = "Thêm người dùng vào phiên chat và gửi thông báo")
-    public void addUser(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
-        // Lưu username vào session
+    @SendTo("/topic/messages")
+    public ChatMessage addUser(@Payload ChatMessage chatMessage, 
+                             SimpMessageHeaderAccessor headerAccessor) {
+        // Add username in web socket session
         headerAccessor.getSessionAttributes().put("username", chatMessage.getSenderUsername());
-        
-        // Gửi thông báo người dùng tham gia
-        messagingTemplate.convertAndSend("/topic/public", chatMessage);
+        log.info("User added: {}", chatMessage.getSenderUsername());
+        return chatMessage;
     }
 
     @GetMapping("/messages/{username}")
@@ -88,5 +81,22 @@ public class ChatController {
         String currentUsername = authentication.getName();
         chatService.markMessagesAsRead(username, currentUsername);
         return ResponseEntity.ok().build();
+    }
+
+    // Gửi tin nhắn từ user tới admin
+    @MessageMapping("/chat.toAdmin")
+    public void sendToAdmin(@Payload String message, SimpMessageHeaderAccessor headerAccessor) {
+        // Giả sử admin có username là "admin"
+        messagingTemplate.convertAndSendToUser("admin", "/queue/messages", message);
+    }
+
+    // Gửi tin nhắn từ admin tới user
+    @MessageMapping("/chat.toUser")
+    public void sendToUser(@Payload String message, SimpMessageHeaderAccessor headerAccessor) {
+        // Lấy username người nhận từ header hoặc message (tùy bạn thiết kế)
+        String username = (String) headerAccessor.getSessionAttributes().get("username");
+        if (username != null) {
+            messagingTemplate.convertAndSendToUser(username, "/queue/messages", message);
+        }
     }
 } 

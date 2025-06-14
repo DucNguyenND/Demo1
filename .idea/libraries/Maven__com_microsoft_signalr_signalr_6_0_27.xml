@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.microsoft.signalr:signalr:6.0.27">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/microsoft/signalr/signalr/6.0.27/signalr-6.0.27.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/microsoft/signalr/signalr/6.0.27/signalr-6.0.27-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/microsoft/signalr/signalr/6.0.27/signalr-6.0.27-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -19,6 +19,7 @@
         <java.version>17</java.version>
         <jwt.version>0.11.5</jwt.version>
         <springdoc.version>2.3.0</springdoc.version>
+        <signalr.version>6.0.27</signalr.version>
     </properties>
 
     <dependencies>
@@ -100,6 +101,13 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- SignalR -->
+        <dependency>
+            <groupId>com.microsoft.signalr</groupId>
+            <artifactId>signalr</artifactId>
+            <version>${signalr.version}</version>
         </dependency>
     </dependencies>
 

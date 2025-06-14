@@ -7,13 +7,16 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="Do-An-TN" />
+        <module name="Demo1" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="Demo1" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="Do-An-TN" options="-parameters" />
+      <module name="Demo1" options="-parameters" />
     </option>
   </component>
 </project>
