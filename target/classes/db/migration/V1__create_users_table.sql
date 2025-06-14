@@ -1,5 +1,6 @@
-CREATE TABLE IF NOT EXISTS test123.users (
-    id BIGSERIAL PRIMARY KEY,
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
+CREATE TABLE users (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -7,29 +8,37 @@ CREATE TABLE IF NOT EXISTS test123.users (
     role VARCHAR(20) NOT NULL DEFAULT 'ROLE_USER',
     phone VARCHAR(20),
     avatar_url VARCHAR(255),
-    last_login TIMESTAMP,
-    enabled BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_login DATETIME,
+    enabled BIT DEFAULT 1,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
 -- Tạo index cho các cột thường xuyên tìm kiếm
-CREATE INDEX IF NOT EXISTS idx_users_username ON test123.users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON test123.users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON test123.users(role);
-CREATE INDEX IF NOT EXISTS idx_users_phone ON test123.users(phone);
-CREATE INDEX IF NOT EXISTS idx_users_last_login ON test123.users(last_login);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_users_username')
+    CREATE INDEX idx_users_username ON users(username);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_users_email')
+    CREATE INDEX idx_users_email ON users(email);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_users_role')
+    CREATE INDEX idx_users_role ON users(role);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_users_phone')
+    CREATE INDEX idx_users_phone ON users(phone);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_users_last_login')
+    CREATE INDEX idx_users_last_login ON users(last_login);
 
--- Tạo trigger để tự động cập nhật updated_at
-CREATE OR REPLACE FUNCTION test123.update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- Trigger cập nhật updated_at khi update
+IF OBJECT_ID('trg_update_users_updated_at', 'TR') IS NOT NULL
+    DROP TRIGGER trg_update_users_updated_at;
+GO
+CREATE TRIGGER trg_update_users_updated_at
+ON users
+AFTER UPDATE
+AS
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_users_updated_at
-    BEFORE UPDATE ON test123.users
-    FOR EACH ROW
-    EXECUTE FUNCTION test123.update_updated_at_column(); 
+    SET NOCOUNT ON;
+    UPDATE users
+    SET updated_at = GETDATE()
+    FROM inserted
+    WHERE users.id = inserted.id;
+END
+GO 

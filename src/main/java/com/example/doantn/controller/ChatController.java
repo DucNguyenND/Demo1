@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @Slf4j
@@ -31,9 +32,11 @@ public class ChatController {
 
     @MessageMapping("/chat.send")
     @SendTo("/topic/messages")
-    public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
-        log.info("Received message: {}", chatMessage);
-        // Lưu vào database
+    public ChatMessage sendMessage(@Payload ChatMessage chatMessage, Principal principal) {
+        log.info("Received message: {} from {}", chatMessage, principal != null ? principal.getName() : "anonymous");
+        if (principal != null) {
+            chatMessage.setSenderUsername(principal.getName());
+        }
         ChatMessage saved = chatService.saveMessage(chatMessage);
         return saved;
     }
@@ -98,5 +101,12 @@ public class ChatController {
         if (username != null) {
             messagingTemplate.convertAndSendToUser(username, "/queue/messages", message);
         }
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<String>> getAllUsersExceptAdmin() {
+        // Lấy danh sách user (trừ admin)
+        List<String> users = chatService.getAllUsernamesExceptAdmin();
+        return ResponseEntity.ok(users);
     }
 } 

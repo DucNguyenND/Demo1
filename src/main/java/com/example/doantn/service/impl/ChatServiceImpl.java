@@ -142,6 +142,14 @@ public class ChatServiceImpl implements ChatService {
         });
     }
 
+    @Override
+    public List<String> getAllUsernamesExceptAdmin() {
+        return userRepository.findAll().stream()
+                .map(User::getUsername)
+                .filter(username -> !"admin".equalsIgnoreCase(username))
+                .toList();
+    }
+
     private boolean isValidChatPair(User user1, User user2) {
         // Chỉ cho phép chat giữa admin và user thường
         return (user1.getRole() == Role.ROLE_ADMIN && user2.getRole() == Role.ROLE_USER) ||

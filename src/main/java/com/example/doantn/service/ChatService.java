@@ -11,4 +11,5 @@ public interface ChatService {
     List<ChatRoom> getChatRooms(String username);
     ChatRoom createChatRoom(String senderUsername, String receiverUsername);
     void markMessagesAsRead(String senderUsername, String receiverUsername);
+    List<String> getAllUsernamesExceptAdmin();
 } 

@@ -1,24 +1,39 @@
-CREATE TABLE IF NOT EXISTS test123.chat_messages (
-    id BIGSERIAL PRIMARY KEY,
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='chat_messages' AND xtype='U')
+CREATE TABLE chat_messages (
+    id BIGINT IDENTITY(1,1) PRIMARY KEY,
     sender_id BIGINT NOT NULL,
     receiver_id BIGINT NOT NULL,
-    content TEXT NOT NULL,
+    content VARCHAR(MAX) NOT NULL,
     type VARCHAR(20) NOT NULL,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_read BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sender_id) REFERENCES test123.users(id),
-    FOREIGN KEY (receiver_id) REFERENCES test123.users(id)
+    timestamp DATETIME NOT NULL DEFAULT GETDATE(),
+    is_read BIT NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (sender_id) REFERENCES users(id),
+    FOREIGN KEY (receiver_id) REFERENCES users(id)
 );
 
 -- Tạo index cho sender và receiver
-CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON test123.chat_messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_receiver ON test123.chat_messages(receiver_id);
-CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON test123.chat_messages(timestamp);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_chat_messages_sender')
+    CREATE INDEX idx_chat_messages_sender ON chat_messages(sender_id);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_chat_messages_receiver')
+    CREATE INDEX idx_chat_messages_receiver ON chat_messages(receiver_id);
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_chat_messages_timestamp')
+    CREATE INDEX idx_chat_messages_timestamp ON chat_messages(timestamp);
 
--- Tạo trigger để tự động cập nhật updated_at
-CREATE TRIGGER update_chat_messages_updated_at
-    BEFORE UPDATE ON test123.chat_messages
-    FOR EACH ROW
-    EXECUTE FUNCTION test123.update_updated_at_column(); 
+-- Trigger cập nhật updated_at khi update
+IF OBJECT_ID('trg_update_chat_messages_updated_at', 'TR') IS NOT NULL
+    DROP TRIGGER trg_update_chat_messages_updated_at;
+GO
+CREATE TRIGGER trg_update_chat_messages_updated_at
+ON chat_messages
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE chat_messages
+    SET updated_at = GETDATE()
+    FROM inserted
+    WHERE chat_messages.id = inserted.id;
+END
+GO 
